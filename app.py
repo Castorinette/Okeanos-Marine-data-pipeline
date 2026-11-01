@@ -27,8 +27,8 @@ def read_pq(name):
     return pd.read_parquet(path)
   raise FileNotFoundError(f"Table not found: {path}")
 
-
-@st.cache_data(show_spinner="Loading data from Gold Layer...")
+ 
+@st.cache_data(ttl=43200)
 def load_data():
   fact = read_pq("fact_marine_observations")
   species = read_pq("dim_species")
