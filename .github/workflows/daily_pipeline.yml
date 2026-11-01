@@ -1,0 +1,47 @@
+name: Daily pipeline
+
+on:
+  schedule:
+    - cron: "0 1 * * *"   
+  workflow_dispatch:       
+
+concurrency:
+  group: daily-pipeline
+  cancel-in-progress: false
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Run pipeline
+        run: python src/pipelines/daily_pipeline.py
+        env:
+          PYTHONPATH: .
+
+      - name: Save output data
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gold-data
+          path: data/final/
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Commit and push updated tables
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/final/
+          git commit -m "done: daily addition of marine species" || exit 0
+          git push
